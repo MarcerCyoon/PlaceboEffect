@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <title>Placebo Effect</title>
+  </head>
+
+  <body>
+	<h1>Placebo Effect Practice</h1>
+	<label for="minigames">Choose a minigame:</label>
+	<select name="minigames" id="minigames">
+		<option value="Area Split">Area Split</option>
+		<option value="Sudoku Set">Sudoku Set</option>
+	</select>
+	<br></br>
+	<label for="time">Time Set (in seconds):</label>
+	<input id="time" value="90"></input>
+	OR
+	<label for="num">Number of Rounds:</label>
+	<input id="num"></input>
+	<br></br>
+
+	<button type="button" id="start" onclick="start()">Start</button>
+	<br></br>
+
+	<div id="timer"></div>
+	<div id="round"></div>
+	<div id="prev"></div>
+	<br></br>
+    <table id="grid"></table>
+	<br></br>
+	<input id="answers"></input>
+  </body>
+</html>
+
+<script>
+function getRandomInt(min, max) {
+	min = Math.ceil(min);
+	max = Math.floor(max);
+	// The maximum is exclusive and the minimum is inclusive
+	return Math.floor(Math.random() * (max - min)) + min;
+}
+
+document.getElementById('answers').onkeypress = function(e){
+	if (!e) e = window.event;
+	var keyCode = e.code || e.key;
+	if (keyCode == 'Enter'){
+		parseAnswer();
+	}
+}
+
+var correct = 0;
+var total = 0;
+var rounds = -1;
+var seconds = -1;
+var minigame;
+var grid;
+var answer;
+
+function start() {
+	document.getElementById("answers").disabled = false;
+	const round = document.getElementById('num');
+	const time = document.getElementById('time');
+
+	if (round.value != "") {
+		// do rounds
+		rounds = parseInt(round.value);
+		seconds = -1;
+
+	} else {
+		// do timer
+		rounds = -1;
+		seconds = parseInt(time.value);
+		var mins = parseInt(seconds / 60);
+		var secs = seconds % 60;
+
+		// Update the count down every 1 second
+		var x = setInterval(function() {
+			// Display the result in the element with id="demo"
+			var displaySecs = secs < 10 ? "0" + secs : secs
+
+			document.getElementById("timer").innerHTML = mins + ":" + displaySecs;
+			secs--;
+			if (secs < 0) {
+				mins--;
+				secs = 59;
+			}
+
+			// If the count down is finished, write some text
+			if (mins < 0) {
+				clearInterval(x);
+				document.getElementById("answers").disabled = true;
+			}
+		}, 1000);
+	}
+
+	correct = 0;
+	total = 0;
+	
+	minigame = document.getElementById('minigames').value;
+	newRound();
+}
+
+function newRound() {
+	total++;
+	var round = document.getElementById('round');
+
+	if (rounds != -1) {
+		if (total > rounds) {
+			round.innerHTML = "Round " + (total - 1) + " (" + correct + "/" + (total - 1) + ") FINISHED!";
+			return;
+		}
+	}
+
+	round.innerHTML = "Round " + total + " (" + correct + "/" + (total - 1) + ")";
+	generateGrid();
+	displayGrid();
+
+}
+
+function parseAnswer() {
+	var guess = document.getElementById("answers");
+
+	switch (minigame) {
+		case "Area Split":
+			if (answer[0] == guess.value) {
+				correct++;
+			}
+			
+			var prev = document.getElementById("prev");
+			prev.innerHTML = "Answer to previous grid was: " + answer[0] + " (with " + answer[1] + ")\n" + answer[2];
+			break;
+		
+		case "Sudoku Set":
+			if (answer == guess.value) {
+				correct++;
+			}
+			var prev = document.getElementById("prev");
+			prev.innerHTML = "Answer to previous grid was: " + answer;
+			break;
+		
+		default:
+			break;
+
+	}
+	
+	guess.value = "";
+	newRound();
+}
+
+function generateGrid() {
+	// Generate grid and answer.
+		if (minigame == "Area Split") {
+			var counts = [0, 0, 0, 0];
+			const colors = ["red", "blue", "green", "yellow"];
+			var len = getRandomInt(6, 14);
+			grid = new Array(len);
+
+			for (var i = 0; i < len; i++) {
+				grid[i] = new Array(len);
+			}
+
+			// every single x, y pair in grid
+			var pairs = [];
+			
+			for (var i = 0; i < len; i++) {
+				for (var j = 0; j < len; j++) {
+					pairs.push([i, j]);
+				}
+			}
+			
+			var pls = 0;
+			// 	populate grid, but in a random order
+			while (pairs.length > 0) {
+				if (pairs.length == 1) {
+					const pair_choice = pairs[0];
+					// if last iteration, generate color in such a way there
+					// are no ties.
+					const maximum = Math.max(...counts);
+					var is_max = [false, false, false, false];
+					var count = 0;
+
+					for (var k = 0; k < 4; k++) {
+						if (counts[k] == maximum) {
+							is_max[k] = true;
+							count++;
+						}
+					}
+
+					if (count <= 1) {
+						// there is only one maximum; to not ruin it, just
+						// have less cell be the maximum color)
+						grid[pair_choice[0]][pair_choice[1]] = colors[counts.indexOf(maximum)];
+						counts[counts.indexOf(maximum)]++;
+
+					} else {
+						// otherwise, choose one of the colors
+						// that are tied for maximum
+						var colorOptions = colors.filter((color, e) => is_max[e]);
+						const choice = getRandomInt(0, colorOptions.length);
+						grid[pair_choice[0]][pair_choice[1]] = colorOptions[choice];
+						counts[colors.indexOf(colorOptions[choice])]++;
+					}
+
+					pairs.splice(0, 1);
+
+				} else {
+					const rand = getRandomInt(0, pairs.length);
+					const pair_choice = pairs[rand];
+					const choice = getRandomInt(0, 4);
+					grid[pair_choice[0]][pair_choice[1]] = colors[choice];
+					// increment chosen color amount
+					counts[choice]++;
+					pairs.splice(rand, 1);
+				}
+			}
+
+			var max = Math.max(...counts);
+			answer = [colors[counts.indexOf(max)], counts[counts.indexOf(max)], counts];			
+		
+		} else if (minigame == "Sudoku Set") {
+			const len = getRandomInt(5, 10);
+			// correct answer is center
+			var center = [getRandomInt(1, len - 1), getRandomInt(1, len - 1)];
+			
+			grid = new Array(len + 1);
+
+			for (var i = 0; i < len + 1; i++) {
+				grid[i] = new Array(len + 1);
+			}
+
+			// first row and first column are for coordinates
+			grid[0][0] = "";
+
+			for (var i = 1; i < len + 1; i++) {
+				grid[0][i] = String.fromCharCode(64 + i);
+				grid[i][0] = i;
+			}
+
+			// populate 3x3 area with answer as center with 1 - 9
+			var numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+			for (var i = center[0]; i < center[0] + 3; i++) {
+				for (var j = center[1]; j < center[1] + 3; j++) {
+					var rand = getRandomInt(0, numbers.length);
+					grid[i][j] = numbers[rand];
+					numbers.splice(rand, 1);
+				}
+			}
+
+			// populate rest of the board with random numbers
+			for (var i = 1; i < len + 1; i++) {
+				for (var j = 1; j < len + 1; j++) {
+					if (grid[i][j] == undefined) {
+						grid[i][j] = getRandomInt(1, 10);
+					}
+				}
+			}
+			
+			// answer is chr(col) + row
+			// so (2, 3) is C2
+			answer = String.fromCharCode(center[1] + 97) + (center[0] + 1);
+		
+		} else {
+			console.log("Something went very wrong!");
+	}
+}
+
+function displayGrid() {
+	var table = document.getElementById("grid");
+	// reset table
+	table.innerHTML = "";
+
+	switch (minigame) {
+		case "Area Split":
+			for (var i = 0; i < grid.length; i++) {
+				var row = table.insertRow();
+				
+				for (var j = 0; j < grid[i].length; j++) {
+					var cell = row.insertCell();
+					
+					switch(grid[i][j]) {
+						case "red":
+							cell.style.backgroundColor = "#FF0000";
+							break;
+						case "blue":
+							cell.style.backgroundColor = "#00FFFF";
+							break;
+						case "green":
+							cell.style.backgroundColor = "#00FF00";
+							break;
+						case "yellow":
+							cell.style.backgroundColor = "#FFFF00";
+							break;
+						default:
+							console.log("Yikes dawg");
+							break;
+					}
+				}
+			}
+			break;
+		
+		case "Sudoku Set":
+			for (var i = 0; i < grid.length; i++) {
+				var row = table.insertRow();
+				
+				for (var j = 0; j < grid[i].length; j++) {
+					var cell = row.insertCell();
+					cell.innerHTML = grid[i][j];
+
+					if (i == 0 || j == 0) {
+						cell.style.color = "red";
+					}
+
+				}
+			}
+			break;
+			
+		default:
+			break;
+	}
+}
+
+</script>

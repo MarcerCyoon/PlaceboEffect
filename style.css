@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css?family=Fira+Sans&display=swap');
+
+body {
+  font-family: 'Fira Sans', serif !important;
+  font-size: 18px !important;
+  background-color: grey !important;
+  align-content: center;
+}
+
+#timer {
+	font-size: 30px;
+}
+
+table {
+	/* hard-coded because I do not care */
+	width: 500px;
+	height: 500px;
+	border-collapse: collapse;
+	text-align: center;
+	font-size: 30px;
+}
+
+td {
+	border: 0.01px solid black;
+}
+
